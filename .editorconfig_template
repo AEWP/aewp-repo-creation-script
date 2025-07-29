@@ -1,0 +1,12 @@
+# Indicate that this is the top-most EditorConfig file
+root = true
+
+# Set default settings for all file types
+[*]
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# You can add more file-specific rules below if needed
+[*.css]
+indent_style = space
+indent_size = 4

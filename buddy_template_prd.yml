@@ -1,0 +1,111 @@
+- pipeline: "Deploy to Production"
+  on: "CLICK"
+  refs:
+  - "refs/heads/prd"
+  priority: "HIGH"
+  target_site_url: "https://#DOMAIN#"
+  fail_on_prepare_env_warning: true
+  variables:
+  - key: "WPEPRD"
+    value: "#WPEPRDENV#"
+    type: "VAR"
+    encrypted: false
+    description: "WP Engine Production Environment Name"
+  actions:
+  - action: "Notify Monitoring of Deployment"
+    type: "EMAIL"
+    title: "Production Deployment Has Started For #DOMAIN#"
+    content: "A production deployment has started. Please disregard any monitoring events."
+    send_as_html: true
+    recipients: "servers@americaneagle.com"
+  - action: "Backup created?"
+    type: "WAIT_FOR_APPLY"
+    description: "Please make sure to create a backup of the site by going to https://my.wpengine.com/installs/#WPEPRDENV#/backup_points"
+    comment: "Did you create a backup?"
+  - action: "CR provided?"
+    type: "WAIT_FOR_APPLY"
+    description: "Please make sure that you have a Change Request submitted to deploy this revision to the live production server before continuing."
+    comment: "Do you have an accompanying CR?"
+  - action: "Deploy to Production"
+    type: "RSYNC"
+    remote_path: "~/sites/$WPEPRD/wp-content/"
+    login: "$WPEPRD"
+    host: "$WPEPRD.ssh.wpengine.net"
+    port: "22"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    arguments: "--no-times --no-perms --no-owner --no-group"
+    archive: true
+    recursive: true
+    compress: true
+    deployment_excludes:
+    - ".buddy"
+    - ".git"
+    - ".gitignore"
+    - ".github"
+    - "./advanced-cache.php"
+    - "./ai1wm-backups/"
+    - "./cache/"
+    - "index.php"
+    - "./mu-plugins/"
+    - "./mysql.sql"
+    - "./object-cache.php"
+    - "./upgrade/"
+    - "./webp-express/"
+    - "./wflogs/"
+    - "./node-modules/"
+    - "./vendor/"
+    deployment_includes:
+    - "./mu-plugins/mu-ae-managed-hosting.php"
+    - "./mu-plugins/ae-sso.php"
+    - "./mu-plugins/ae-sso/"
+  - action: "Visual tests"
+    type: "VISUAL_TESTS"
+    resolution_width: 1920
+    resolution_height: 1080
+    pixel_tolerance_level: 0.15
+    images_history_limit: 30
+    screenshots:
+    - url: "https://#DOMAIN#"
+      baseline: ""
+      full_page: false
+      wait_for_xpath: ""
+      headers: []
+  - action: "Performance Testing"
+    type: "LIGHTHOUSE"
+    device: "mobileDesktop"
+    website: "https://#DOMAIN#"
+    performance: 70
+    accessibility: 70
+    best_practices: 70
+    seo: 70
+    ignore_errors: true
+  - action: "Review/Testing"
+    type: "WAIT_FOR_APPLY"
+    description: "Be sure to review the production site and check for any errors and that the expected changes are functioning properly."
+    comment: "Are the expected changes working as expected and displaying properly?"
+  - action: "Notify Monitoring Team of Deployment Completion"
+    type: "EMAIL"
+    title: "Production Deployment Has Started For #DOMAIN#"
+    content: "A production deployment has been completed. Please resume monitoring."
+    send_as_html: true
+    recipients: "servers@americaneagle.com"
+  - action: "Clear Caches"
+    type: "SSH_COMMAND"
+    working_directory: "~/sites/$WPEPRD/wp-content/"
+    login: "$WPEPRD"
+    host: "$WPEPRD.ssh.wpengine.net"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    commands:
+    - "wp cache flush --all"
+    - "wp page-cache flush"
+    - "wp cdn-cache flush"
+    - "wp rewrite flush --hard"
+    run_as_script: true
+    variables:
+    - key: "WPEPRD"
+      value: "#WPEPRDENV#"
+      type: "VAR"
+      encrypted: false
+      description: "WP Engine Production Environment Name"

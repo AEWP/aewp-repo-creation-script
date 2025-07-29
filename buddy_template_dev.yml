@@ -1,0 +1,67 @@
+- pipeline: "Deploy to Development"
+  events:
+  - type: "PUSH"
+    refs:
+    - "refs/heads/dev"
+  priority: "LOW"
+  target_site_url: "https://$WPEDEV.wpengine.com"
+  fail_on_prepare_env_warning: true
+  variables:
+  - key: "WPEDEV"
+    value: "#WPEDEVENV#"
+    type: "VAR"
+    encrypted: false
+    description: "WP Engine Development Environment Name"
+  actions:
+  - action: "Deploy to Development"
+    type: "RSYNC"
+    remote_path: "~/sites/$WPEDEV/wp-content/"
+    login: "$WPEDEV"
+    host: "$WPEDEV.ssh.wpengine.net"
+    port: "22"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    arguments: "--no-times --no-perms --no-owner --no-group"
+    archive: true
+    recursive: true
+    compress: true
+    deployment_excludes:
+    - ".git"
+    - ".gitignore"
+    - ".github"
+    - "./advanced-cache.php"
+    - "./ai1wm-backups/"
+    - "./cache/"
+    - "i./ndex.php"
+    - "./mu-plugins/"
+    - "./mysql.sql"
+    - "./object-cache.php"
+    - "./upgrade/"
+    - "./webp-express/"
+    - "./wflogs/"
+    - "./node-modules/"
+    - "./vendor/"
+    deployment_includes:
+    - "./mu-plugins/mu-ae-managed-hosting.php"
+    - "./mu-plugins/ae-sso.php"
+    - "./mu-plugins/ae-sso/"
+  - action: "Clear Caches"
+    type: "SSH_COMMAND"
+    working_directory: "~/sites/$WPEDEV/wp-content/"
+    login: "$WPEDEV"
+    host: "$WPEDEV.ssh.wpengine.net"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    commands:
+    - "wp cache flush --all"
+    - "wp cron event run --all"
+    - "wp page-cache flush"
+    - "wp cdn-cache flush"
+    - "wp rewrite flush --hard"
+    run_as_script: true
+    variables:
+    - key: "WPEDEV"
+      value: "#WPEDEVENV#"
+      type: "VAR"
+      encrypted: false
+      description: "WP Engine Development Environment Name"

@@ -1,0 +1,65 @@
+- pipeline: "Deploy to Staging"
+  variables:
+  - key: "WPESTG"
+    value: "#WPESTGENV#"
+    type: "VAR"
+    encrypted: false
+    description: "WP Engine Staging Environment Name"
+  events:
+  - type: "PUSH"
+    refs:
+    - "refs/heads/stg"
+  target_site_url: "https://$WPESTG.wpengine.com"
+  fail_on_prepare_env_warning: true
+  actions:  
+  - action: "Deploy to Staging"
+    type: "RSYNC"
+    remote_path: "~/sites/$WPESTG/wp-content/"
+    login: "$WPESTG"
+    host: "$WPESTG.ssh.wpengine.net"
+    port: "22"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    arguments: "--no-times --no-perms --no-owner --no-group"
+    archive: true
+    recursive: true
+    compress: true
+    deployment_excludes:
+    - ".git"
+    - ".gitignore"
+    - ".github"
+    - "./advanced-cache.php"
+    - "./ai1wm-backups/"
+    - "./cache/"
+    - "i./ndex.php"
+    - "./mu-plugins/"
+    - "./mysql.sql"
+    - "./object-cache.php"
+    - "./upgrade/"
+    - "./webp-express/"
+    - "./wflogs/"
+    - "./node-modules/"
+    - "./vendor/"
+    deployment_includes:
+    - "./mu-plugins/mu-ae-managed-hosting.php"
+    - "./mu-plugins/ae-sso.php"
+    - "./mu-plugins/ae-sso/"
+  - action: "Clear Caches"
+    type: "SSH_COMMAND"
+    working_directory: "~/sites/$WPESTG/wp-content/"
+    login: "$WPESTG"
+    host: "$WPESTG.ssh.wpengine.net"
+    env_key: "secure!cOsuCA8Q1VJQ67XmZbnH3A==.bcMOU8tJO8hNhxm9oiLjNw=="
+    authentication_mode: "ENV_KEY"
+    commands:
+    - "wp cache flush --all"
+    - "wp page-cache flush"
+    - "wp cdn-cache flush"
+    - "wp rewrite flush --hard"
+    run_as_script: true
+    variables:
+    - key: "WPESTG"
+      value: "#WPESTGENV#"
+      type: "VAR"
+      encrypted: false
+      description: "WP Engine Staging Environment Name"
